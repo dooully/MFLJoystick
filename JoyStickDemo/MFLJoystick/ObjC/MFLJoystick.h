@@ -24,4 +24,5 @@
 @protocol JoystickDelegate <NSObject>
 @optional
 - (void)joystick:(MFLJoystick *)aJoystick didUpdate:(CGPoint)movement;
+- (void)joystick:(MFLJoystick *)aJoystick angle:(int) angle strength:(float)strength;
 @end

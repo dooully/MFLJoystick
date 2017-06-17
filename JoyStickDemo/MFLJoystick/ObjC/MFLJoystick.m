@@ -8,6 +8,8 @@
 
 #import "MFLJoystick.h"
 
+#define TO_DEGREES(degrees)(degrees * 180 / M_PI)
+
 @interface MFLJoystick ()
 
 @property BOOL isTouching;
@@ -19,6 +21,7 @@
 @property UIImageView *bgImageView;
 @property UIButton *thumbImageView;
 @property UIView *handle;
+@property CGFloat bgRadius;
 
 @end
 
@@ -131,14 +134,14 @@
     //else
     CGPoint selfCenter = CGPointMake(self.bounds.origin.x+self.bounds.size.width/2,
                                      self.bounds.origin.y+self.bounds.size.height/2);
-    CGFloat selfRadius = (self.bounds.size.width - self.handle.bounds.size.width) / 2;
+    self.bgRadius = (self.bounds.size.width - self.handle.bounds.size.width) / 2;
     
-    if (DistanceBetweenTwoPoints(currentPos, selfCenter) > selfRadius) {
+    if (DistanceBetweenTwoPoints(currentPos, selfCenter) > self.bgRadius) {
         double vX = currentPos.x - selfCenter.x;
         double vY = currentPos.y - selfCenter.y;
         double magV = sqrt(vX*vX + vY*vY);
-        currentPos.x = selfCenter.x + vX / magV * selfRadius;
-        currentPos.y = selfCenter.y + vY / magV * selfRadius;
+        currentPos.x = selfCenter.x + vX / magV * self.bgRadius;
+        currentPos.y = selfCenter.y + vY / magV * self.bgRadius;
     }
     
     [UIView animateWithDuration:.1 animations:^{
@@ -166,6 +169,7 @@
 //        self.alpha = 0.1;
 //    }];
     [self.delegate joystick:self didUpdate:CGPointZero];
+    
     self.isTouching = FALSE;
 }
 
@@ -217,6 +221,9 @@
         CGPoint degreeOfPosition = CGPointMake((self.handle.frame.origin.x/self.handle.frame.size.width-.55)*2,
                                                (self.handle.frame.origin.y/self.handle.frame.size.height-.55)*2);
         [self.delegate joystick:self didUpdate:degreeOfPosition];
+        
+        
+        [self.delegate joystick:self angle:[self getAngle] strength:[self getStrength]];
     }
     
     [self performSelector:@selector(notifyDelegate) withObject:nil afterDelay:self.updateInterval];
@@ -258,6 +265,15 @@
     [super setEnabled:enabled];
     self.userInteractionEnabled = enabled;
     self.thumbImageView.enabled = enabled;
+}
+
+- (int) getAngle {
+    int angle = (int)TO_DEGREES(atan2f(self.defaultPoint.y - self.handle.center.y, self.defaultPoint.x - self.handle.center.x));
+    return angle < 0 ? angle + 360 : angle;
+}
+
+- (float) getStrength {
+    return (100 * sqrtf((self.defaultPoint.x - self.handle.center.x) * (self.defaultPoint.x - self.handle.center.x) + (self.defaultPoint.y - self.handle.center.y) * (self.defaultPoint.y - self.handle.center.y))) / self.bgRadius;
 }
 
 - (void) setSelected:(BOOL)selected {

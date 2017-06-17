@@ -17,7 +17,7 @@
 @property CGPoint defaultPoint;
 
 @property UIImageView *bgImageView;
-@property UIImageView *thumbImageView;
+@property UIButton *thumbImageView;
 @property UIView *handle;
 
 @end
@@ -42,7 +42,7 @@
     if (self) {
         [self sharedInit];
     }
-
+    
     return self;
 }
 
@@ -58,6 +58,28 @@
 
     [self makeHandle];
     [self animate];
+    [self notifyDelegate];
+    
+}
+
+- (void)layoutSubviews {
+    [super layoutSubviews];
+    
+    NSLog(@"[layoutSubviews]");
+    
+    _bgImageView.frame = self.bounds;
+    
+    CGRect thumbRect = CGRectMake(0, 0, self.bounds.size.width * 0.7, self.bounds.size.height * 0.7);
+    
+    self.handle.frame = thumbRect;
+    self.thumbImageView.frame = thumbRect;
+    
+    [self.handle setCenter:CGPointMake(self.bounds.size.width/2,
+                                       self.bounds.size.height/2)];
+    
+    self.thumbImageView.center = self.handle.center;
+    
+    self.defaultPoint = self.handle.center;
     [self notifyDelegate];
 }
 
@@ -77,22 +99,26 @@
 
 - (void)makeHandle
 {
-    self.handle = [[UIView alloc] initWithFrame:CGRectMake(0, 0, 61, 61)];
+    CGRect thumbRect = CGRectMake(0, 0, self.bounds.size.width * 0.7, self.bounds.size.height * 0.7);
+    
+    self.handle = [[UIView alloc] initWithFrame:thumbRect];
     [self.handle setCenter:CGPointMake(self.bounds.size.width/2,
                                        self.bounds.size.height/2)];
     self.defaultPoint = self.handle.center;
     [self roundView:self.handle toDiameter:self.handle.bounds.size.width];
     [self addSubview:self.handle];
+    self.handle.userInteractionEnabled = NO;
     
-    self.thumbImageView = [[UIImageView alloc] initWithFrame:self.handle.frame];
+    self.thumbImageView = [[UIButton alloc] initWithFrame:self.handle.frame];
+    self.thumbImageView.userInteractionEnabled = NO;
     [self addSubview:self.thumbImageView];
 }
 
 - (void)touchesBegan:(NSSet *)touches withEvent:(UIEvent *)event
 {
-    [UIView animateWithDuration:.2 animations:^{
-        self.alpha = 1;
-    }];
+//    [UIView animateWithDuration:.2 animations:^{
+//        self.alpha = 1;
+//    }];
     
     [self touchesMoved:touches withEvent:event];
 }
@@ -105,7 +131,7 @@
     //else
     CGPoint selfCenter = CGPointMake(self.bounds.origin.x+self.bounds.size.width/2,
                                      self.bounds.origin.y+self.bounds.size.height/2);
-    CGFloat selfRadius = self.bounds.size.width/2 - 34;
+    CGFloat selfRadius = (self.bounds.size.width - self.handle.bounds.size.width) / 2;
     
     if (DistanceBetweenTwoPoints(currentPos, selfCenter) > selfRadius) {
         double vX = currentPos.x - selfCenter.x;
@@ -124,11 +150,21 @@
 
 }
 
+- (BOOL) pointInside:(CGPoint)point withEvent:(UIEvent *)event {
+    CGPoint localPoint = [self convertPoint:point fromView:self];
+    for (UIView *subview in self.subviews) {
+        if ([subview pointInside:localPoint withEvent:event]) {
+            return YES;
+        }
+    }
+    return NO;
+}
+
 - (void)touchesEnded:(NSSet *)touches withEvent:(UIEvent *)event
 {
-    [UIView animateWithDuration:.4 animations:^{
-        self.alpha = 0.1;
-    }];
+//    [UIView animateWithDuration:.4 animations:^{
+//        self.alpha = 0.1;
+//    }];
     [self.delegate joystick:self didUpdate:CGPointZero];
     self.isTouching = FALSE;
 }
@@ -201,9 +237,11 @@
     self.smallestPossible = sv;
 }
 
-- (void)setThumbImage:(UIImage *)thumbImage andBGImage:(UIImage *)bgImage
+- (void)setThumbImage:(UIImage *)thumbImage andSelectImage:(UIImage *)thumbSelectImage andBGImage:(UIImage *)bgImage;
 {
-    self.thumbImageView.image = thumbImage;
+    [self.thumbImageView setImage:thumbImage forState:UIControlStateNormal];
+    [self.thumbImageView setImage:thumbSelectImage forState:UIControlStateSelected];
+//    self.thumbImageView.highlightedImage = thumbHighImage;
     self.bgImageView.image = bgImage;
 }
 
@@ -214,6 +252,18 @@
     roundedView.frame = newFrame;
     roundedView.layer.cornerRadius = newSize / 2.0;
     roundedView.center = saveCenter;
+}
+
+- (void) setEnabled:(BOOL)enabled {
+    [super setEnabled:enabled];
+    self.userInteractionEnabled = enabled;
+    self.thumbImageView.enabled = enabled;
+}
+
+- (void) setSelected:(BOOL)selected {
+    [super setEnabled:selected];
+    
+    self.thumbImageView.selected = selected;
 }
 
 #pragma mark Geometry Methods

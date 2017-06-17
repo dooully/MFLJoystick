@@ -10,13 +10,13 @@
 #import <QuartzCore/QuartzCore.h>
 
 @protocol JoystickDelegate;
-@interface MFLJoystick : UIView
+@interface MFLJoystick : UIButton
 
 @property CGFloat updateInterval;
 @property (weak) IBOutlet id<JoystickDelegate> delegate;
 
 - (void)setMovementUpdateInterval:(CGFloat)interval;
-- (void)setThumbImage:(UIImage *)thumbImage andBGImage:(UIImage *)bgImage;
+- (void)setThumbImage:(UIImage *)thumbImage andSelectImage:(UIImage *)thumbSelectImage andBGImage:(UIImage *)bgImage;
 - (void)setMoveViscosity:(CGFloat)mv andSmallestValue:(CGFloat)sv;
 
 @end
